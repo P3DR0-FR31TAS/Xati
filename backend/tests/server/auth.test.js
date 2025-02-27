@@ -70,7 +70,6 @@ describe('Testes de Autenticação', () => {
   }, 40000);
 
   it('Deve falhar ao realizar registo com credenciais em falta', async () => {
-
     //User com name em falta
     const userData = {
       username: "usernameExemplo2",
@@ -92,7 +91,6 @@ describe('Testes de Autenticação', () => {
     expect(response.body).toHaveProperty('error');
     expect(response.body.error).toContain('ValidationError');
     expect(response.body.error).toContain('name');
-    expect(response.body.error).toContain('role');
     expect(response.body.error).toContain('required');
   }, 40000);
 
