@@ -37,7 +37,7 @@ function UsersService(UsersModel) {
   }
 
   function save(model) {
-    return model.save(model)
+    return model.save()
       .then((savedUser) => {
         return {
           message: "User saved successfully",

@@ -20,8 +20,11 @@ function AuthRouter() {
       })
       .catch((err) => {
         console.error(err);
-        res.status(500);
-        res.send({ error: err.message });
+        if (err.message === "Email or username already exists") {
+          res.status(401).send({ error: err.message })
+        } else {
+          res.status(500).send({ error: err.message });
+        }
       });
   });
 
@@ -33,8 +36,8 @@ function AuthRouter() {
         return Users.createToken(user);
       })
       .then((response) => {
-        res.cookie("token", response.token, { 
-          httpOnly: true, 
+        res.cookie("token", response.token, {
+          httpOnly: true,
           secure: process.env.NODE_ENV === 'production'
         });
         console.log(response);
@@ -43,8 +46,8 @@ function AuthRouter() {
       })
       .catch((err) => {
         console.error(err);
-        if(err.message === "User not found" || err.message === "Password incorrect"){
-          res.status(401).send({error: err.message})
+        if (err.message === "User not found" || err.message === "Password incorrect") {
+          res.status(401).send({ error: err.message })
         } else {
           res.status(500).send({ error: err.message });
         }
