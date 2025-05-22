@@ -13,17 +13,19 @@ function UsersService(UsersModel) {
     findUser,
   };
 
-  function create(user) {
-    return UsersModel.findOne({
-      $or: [
-        { email: user.email },
-        { username: user.username }
-      ]
-    }).exec()
-      .then((existingUser) => {
-        if (existingUser) {
-          throw new Error("Email or username already exists");
+  /*function create(user) {
+    return UsersModel.findOne({username: user.username}).exec()
+      .then((existingUserByEmail) => {
+        if (existingUserByEmail) {
+          throw new Error("Email already exists");
         }
+        return UsersModel.findOne({username: user.username}).exec();
+      })
+      .then((existingUserByUsername) => {
+        if(existingUserByUsername) {
+          throw new Error("Username already exists");
+        }
+
         return createPassword(user);
       })
       .then((hashPassword) => {
@@ -34,23 +36,46 @@ function UsersService(UsersModel) {
         let newUser = UsersModel(newUserWithPassword);
         return save(newUser)
       });
+  }*/
+
+  async function create(user) {
+    try {
+      const existingUserByEmail = await UsersModel.findOne({ email: user.email });
+      if (existingUserByEmail) {
+        throw new Error("Email already exists");
+      }
+
+      const existingUserByUsername = await UsersModel.findOne({ username: user.username });
+      if (existingUserByUsername) {
+        throw new Error("Username already exists");
+      }
+      const hashPassword = await createPassword(user);
+      const newUserWithPassword = {
+        ...user,
+        password: hashPassword,
+      };
+      const newUser = new UsersModel(newUserWithPassword);
+      return save(newUser);
+    } catch (err) {
+      throw new Error("Failed creating the user");
+    }
   }
 
-  function save(model) {
-    return model.save()
-      .then((savedUser) => {
-        return {
-          message: "User saved successfully",
-          user: savedUser
-        };
-      })
-      .catch((err) => {
-        console.error(err);
-        throw new Error("Failed saving the user: " + err);
-      });
+  async function save(model) {
+    try {
+      const savedUser = await model.save();
+      return {
+        message: "User saved successfully",
+        user: savedUser
+      }
+
+    } catch (err) {
+      console.error(err);
+      throw new Error("Failed saving the user:");
+    }
   }
 
-  function findUser({ email, password }) {
+  /*function findUser({ email, password }) {
     return UsersModel.findOne({ email }).exec()
       .then((user) => {
         if (!user) {
@@ -71,6 +96,24 @@ function UsersService(UsersModel) {
         }
         return Promise.reject('There is a problem with login:' + err);
       });
+  }*/
+
+  async function findUser({email, password}){
+    try {
+      const user = await UsersModel.findOne({email});
+      if (!user) {
+        throw new Error("User not found");
+      }
+      const match = await comparePassword(password, user.password);
+      if (!match) {
+        throw new Error("Password incorrect");
+      }
+      return user;
+    }
+     catch (err) {
+      console.error(err);
+      throw new Error("Failed finding the user");
+     }
   }
 
   function createToken(user) {
@@ -84,15 +127,15 @@ function UsersService(UsersModel) {
     return { auth: true, token, expiresIn: config.expiresToken };
   }
 
-  function verifyToken(token) {
-    return new Promise((resolve, reject) => {
-      jwt.verify(token, config.secret, (err, decoded) => {
-        if (err) {
-          reject();
-        }
-        return resolve(decoded);
-      });
-    });
+  async function verifyToken(token) {
+    try{
+      const decoded = await jwt.verify(token, config.secret);
+      return decoded;
+    }
+    catch (err) {
+      console.error(err);
+      throw new Error("Failed verifying the token");
+    }
   }
 
   function authorize(scopes) {

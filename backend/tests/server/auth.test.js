@@ -144,9 +144,10 @@ describe('Testes de Autenticação', () => {
       ])
     );
   }, 40000);
+
+  afterAll(async () => {
+    const mongoose = require('mongoose');
+    await mongoose.connection.close(); // Fecha a conexão da BD para evitar leaks no Jest
+  });
 });
 
-afterAll(async () => {
-  const mongoose = require('mongoose');
-  await mongoose.connection.close(); // Fecha a conexão da BD para evitar leaks no Jest
-});
